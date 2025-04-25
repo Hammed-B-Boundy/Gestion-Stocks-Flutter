@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:my_store/models/stock.dart';
 import 'package:my_store/pages/HomePage.dart';
+import 'package:my_store/services/responsive_helper.dart';
+import 'package:my_store/widgets/responsive_wrapper.dart';
 
 class StockDetailPage extends StatelessWidget {
   final Stock stock;
@@ -17,15 +19,21 @@ class StockDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'DETAILS DU STOCK',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 18),
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.home, size: 30, color: Colors.orangeAccent),
+            icon: Icon(
+              Icons.home,
+              size: ResponsiveHelper.getAdaptiveIconSize(context) * 1.5,
+              color: Colors.orangeAccent,
+            ),
             onPressed: () {
-              // Redirection vers la page principale
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => HomePage()),
@@ -34,149 +42,206 @@ class StockDetailPage extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Carte principale avec le fournisseur
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.store, color: Colors.orange),
-                      title: Text(
-                        stock.supplier,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+      body: ResponsiveWrapper(
+        child: SingleChildScrollView(
+          padding: ResponsiveHelper.getAdaptivePadding(context),
+          child: Column(
+            children: [
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: ResponsiveHelper.getAdaptivePadding(context),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(
+                          Icons.store,
                           color: Colors.orange,
+                          size:
+                              ResponsiveHelper.getAdaptiveIconSize(context) *
+                              1.5,
+                        ),
+                        title: Text(
+                          stock.supplier,
+                          style: TextStyle(
+                            fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                              context,
+                              22,
+                            ),
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Fournisseur',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                              context,
+                              14,
+                            ),
+                          ),
                         ),
                       ),
-                      subtitle: Text(
-                        'Fournisseur',
-                        style: TextStyle(color: Colors.grey.shade700),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: ResponsiveHelper.getAdaptiveSpacing(context) * 2,
+              ),
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: ResponsiveHelper.getAdaptivePadding(context),
+                  child: Column(
+                    children: [
+                      _buildDetailRow(
+                        context,
+                        Icons.calendar_today,
+                        'Date',
+                        stock.date,
                       ),
-                    ),
-                  ],
+                      _buildDetailRow(
+                        context,
+                        Icons.inventory,
+                        'Quantité reçue',
+                        '${formatNumber(stock.quantityReceived)} ${stock.quantityReceivedType}',
+                      ),
+                      _buildDetailRow(
+                        context,
+                        Icons.check_circle,
+                        'Quantité triée',
+                        formatNumber(stock.sortedQuantity),
+                      ),
+                      _buildDetailRow(
+                        context,
+                        Icons.assignment_turned_in,
+                        'Quantité exacte',
+                        formatNumber(stock.exactQuantity),
+                      ),
+                      _buildDetailRow(
+                        context,
+                        Icons.attach_money,
+                        'Prix unitaire',
+                        '${formatNumber(stock.unitPrice)} ${stock.unitPriceType}',
+                      ),
+                      Divider(
+                        height:
+                            ResponsiveHelper.getAdaptiveSpacing(context) * 2,
+                      ),
+                      _buildTotalAmountRow(
+                        context,
+                        formatNumber(stock.amount),
+                        formatNumber(stock.paidAmount),
+                        formatNumber(stock.remainingAmount),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Informations détaillées
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildDetailRow(Icons.calendar_today, 'Date', stock.date),
-                    _buildDetailRow(
-                      Icons.inventory,
-                      'Quantité reçue',
-                      '${formatNumber(stock.quantityReceived)} ${stock.quantityReceivedType}',
-                    ),
-                    _buildDetailRow(
-                      Icons.check_circle,
-                      'Quantité triée',
-                      formatNumber(stock.sortedQuantity),
-                    ),
-                    _buildDetailRow(
-                      Icons.assignment_turned_in,
-                      'Quantité exacte',
-                      formatNumber(stock.exactQuantity),
-                    ),
-                    _buildDetailRow(
-                      Icons.attach_money,
-                      'Prix unitaire',
-                      '${formatNumber(stock.unitPrice)} ${stock.unitPriceType}',
-                    ),
-                    const Divider(),
-                    _buildTotalAmountRow(
-                      formatNumber(stock.amount),
-                      formatNumber(stock.paidAmount),
-                      formatNumber(stock.remainingAmount),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Widget pour une ligne d'information avec icône
-  Widget _buildDetailRow(IconData icon, String label, String value) {
+  Widget _buildDetailRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(
+        vertical: ResponsiveHelper.getAdaptiveSpacing(context),
+      ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.blueGrey),
-          const SizedBox(width: 12),
+          Icon(
+            icon,
+            color: Colors.blueGrey,
+            size: ResponsiveHelper.getAdaptiveIconSize(context) * 1.2,
+          ),
+          SizedBox(width: ResponsiveHelper.getAdaptiveSpacing(context) * 1.5),
           Text(
             label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          const Spacer(),
-          Text(value, style: const TextStyle(fontSize: 16)),
+          Spacer(),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // Widget pour afficher les montants avec un design plus visible
   Widget _buildTotalAmountRow(
+    BuildContext context,
     String amount,
     String paidAmount,
     String remainingAmount,
   ) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: ResponsiveHelper.getAdaptivePadding(context),
       decoration: BoxDecoration(
         color: Colors.green.shade50,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         children: [
-          _buildAmountRow('Montant Total', amount, Colors.green),
-          _buildAmountRow('Montant Payé', paidAmount, Colors.blue),
-          _buildAmountRow('Montant Restant', remainingAmount, Colors.red),
+          _buildAmountRow(context, 'Montant Total', amount, Colors.green),
+          _buildAmountRow(context, 'Montant Payé', paidAmount, Colors.blue),
+          _buildAmountRow(
+            context,
+            'Montant Restant',
+            remainingAmount,
+            Colors.red,
+          ),
         ],
       ),
     );
   }
 
-  // Widget pour afficher une ligne de montant stylisée
-  Widget _buildAmountRow(String label, String value, Color color) {
+  Widget _buildAmountRow(
+    BuildContext context,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(
+        vertical: ResponsiveHelper.getAdaptiveSpacing(context),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
           Text(
-            '$value FCFA', // Plus besoin de toStringAsFixed(0), la valeur est déjà formatée
+            '$value FCFA',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
               fontWeight: FontWeight.bold,
               color: color,
             ),

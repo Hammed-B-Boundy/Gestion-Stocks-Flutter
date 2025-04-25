@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'FournisseurDetailPage.dart'; // Import de la nouvelle page
+import 'package:my_store/services/responsive_helper.dart';
+import 'package:my_store/widgets/responsive_wrapper.dart';
 
 class FournisseursListPage extends StatefulWidget {
   const FournisseursListPage({super.key});
@@ -59,22 +61,39 @@ class _FournisseursListPageState extends State<FournisseursListPage> {
       context: context,
       builder:
           (BuildContext dialogContext) => AlertDialog(
-            title: const Text('Confirmation'),
-            content: const Text(
+            title: Text(
+              'Confirmation',
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 18),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
               'Voulez-vous vraiment supprimer ce fournisseur ? Cette action est irréversible.',
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Annuler'),
+                child: Text(
+                  'Annuler',
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+                  ),
+                ),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(dialogContext, true);
                 },
-                child: const Text(
+                child: Text(
                   'Supprimer',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+                    color: Colors.red,
+                  ),
                 ),
               ),
             ],
@@ -86,95 +105,135 @@ class _FournisseursListPageState extends State<FournisseursListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'FOURNISSEURS',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+          ),
         ),
       ),
-      body:
-          _suppliers.isEmpty
-              ? const Center(
-                child: Text(
-                  'Aucun fournisseur disponible',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-              )
-              : RefreshIndicator(
-                onRefresh:
-                    _refreshData, // Rafraîchir les données en glissant vers le bas
-                child: ListView.builder(
-                  itemCount: _suppliers.length,
-                  itemBuilder: (context, index) {
-                    final supplier = _suppliers[index];
-                    return Dismissible(
-                      key: Key(supplier['id'].toString()),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        color: Colors.red,
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 20),
-                        child: const Icon(Icons.delete, color: Colors.white),
+      body: ResponsiveWrapper(
+        child:
+            _suppliers.isEmpty
+                ? Center(
+                  child: Text(
+                    'Aucun fournisseur disponible',
+                    style: TextStyle(
+                      fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                        context,
+                        16,
                       ),
-                      confirmDismiss: (direction) async {
-                        try {
-                          final shouldDelete = await _confirmDelete(
-                            context,
-                            supplier['id'],
-                          );
-                          if (shouldDelete == true) {
-                            await _deleteSupplier(supplier['id']);
-                            return true;
-                          }
-                          return false;
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Erreur: ${e.toString()}'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          return false;
-                        }
-                      },
-                      child: InkWell(
-                        onTap: () async {
-                          // Attendre le retour de la page de détail
-                          final shouldRefresh = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => FournisseurDetailPage(
-                                    fournisseur: supplier,
-                                  ),
-                            ),
-                          );
-
-                          // Si un paiement a été effectué, rafraîchir les données
-                          if (shouldRefresh == true) {
-                            _refreshData();
-                          }
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey.shade300),
-                            ),
+                      color: Colors.grey,
+                    ),
+                  ),
+                )
+                : RefreshIndicator(
+                  onRefresh: _refreshData,
+                  child: ListView.builder(
+                    itemCount: _suppliers.length,
+                    itemBuilder: (context, index) {
+                      final supplier = _suppliers[index];
+                      return Dismissible(
+                        key: Key(supplier['id'].toString()),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: EdgeInsets.only(
+                            right:
+                                ResponsiveHelper.getAdaptiveSpacing(context) *
+                                2,
                           ),
-                          child: ListTile(
-                            title: Text(supplier['name']),
-                            leading: const Icon(
-                              Icons.person,
-                              color: Color.fromARGB(255, 35, 189, 255),
-                            ),
-                            trailing: const Icon(Icons.arrow_forward),
+                          child: Icon(
+                            Icons.delete,
+                            color: Colors.white,
+                            size:
+                                ResponsiveHelper.getAdaptiveIconSize(context) *
+                                1.5,
                           ),
                         ),
-                      ),
-                    );
-                  },
+                        confirmDismiss: (direction) async {
+                          try {
+                            final shouldDelete = await _confirmDelete(
+                              context,
+                              supplier['id'],
+                            );
+                            if (shouldDelete == true) {
+                              await _deleteSupplier(supplier['id']);
+                              return true;
+                            }
+                            return false;
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Erreur: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return false;
+                          }
+                        },
+                        child: InkWell(
+                          onTap: () async {
+                            final shouldRefresh = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => FournisseurDetailPage(
+                                      fournisseur: supplier,
+                                    ),
+                              ),
+                            );
+
+                            if (shouldRefresh == true) {
+                              _refreshData();
+                            }
+                          },
+                          child: Container(
+                            margin: ResponsiveHelper.getAdaptivePadding(
+                              context,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: Colors.grey.shade300),
+                              ),
+                            ),
+                            child: ListTile(
+                              title: Text(
+                                supplier['name'],
+                                style: TextStyle(
+                                  fontSize:
+                                      ResponsiveHelper.getAdaptiveFontSize(
+                                        context,
+                                        16,
+                                      ),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              leading: Icon(
+                                Icons.person,
+                                color: const Color.fromARGB(255, 35, 189, 255),
+                                size:
+                                    ResponsiveHelper.getAdaptiveIconSize(
+                                      context,
+                                    ) *
+                                    1.2,
+                              ),
+                              trailing: Icon(
+                                Icons.arrow_forward,
+                                size: ResponsiveHelper.getAdaptiveIconSize(
+                                  context,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
+      ),
     );
   }
 }
