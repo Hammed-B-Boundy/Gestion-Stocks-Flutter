@@ -125,7 +125,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Image.asset(
                   "images/man.png",
-                  height: ResponsiveHelper.getAdaptiveIconSize(context),
+                  height: ResponsiveHelper.getAdaptiveIconSize(context) * 2,
                 ),
                 SizedBox(width: ResponsiveHelper.getAdaptiveSpacing(context)),
                 Column(
@@ -136,16 +136,16 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper.getAdaptiveFontSize(
                           context,
-                          12,
+                          17,
                         ),
                       ),
                     ),
                     Text(
-                      'Bonjour',
+                      'Bienvenue',
                       style: TextStyle(
                         fontSize: ResponsiveHelper.getAdaptiveFontSize(
                           context,
-                          16,
+                          20,
                         ),
                         fontWeight: FontWeight.bold,
                       ),
@@ -156,20 +156,18 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-
         body: RefreshIndicator(
-          onRefresh: getTotalAmountAndQuantity, // Pull-to-refresh
+          onRefresh: getTotalAmountAndQuantity,
           child: ResponsiveWrapper(
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
+                  // Carte du montant total
                   Container(
                     margin: ResponsiveHelper.getAdaptivePadding(context),
-                    width:
-                        ResponsiveHelper.getScreenWidth(context) *
-                        (ResponsiveHelper.isMobile(context) ? 0.95 : 0.9),
-                    height: ResponsiveHelper.isMobile(context) ? 180 : 200,
+                    width: ResponsiveHelper.getContentWidth(context),
+                    height: ResponsiveHelper.isMobile(context) ? 200 : 220,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -191,98 +189,22 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Row(
-                          children: [
-                            SizedBox(
-                              height: ResponsiveHelper.getAdaptiveSpacing(
-                                context,
-                              ),
-                            ),
-                            Image.asset(
-                              "images/dollar.png",
-                              height:
-                                  ResponsiveHelper.getAdaptiveIconSize(
-                                    context,
-                                  ) *
-                                  2,
-                            ),
-                            Expanded(
-                              child: ListTile(
-                                title: Text(
-                                  'Montant Total des Stocks',
-                                  style: TextStyle(
-                                    fontSize:
-                                        ResponsiveHelper.getAdaptiveFontSize(
-                                          context,
-                                          16,
-                                        ),
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  '${formatNumber(totalAmount)} FCFA',
-                                  style: TextStyle(
-                                    fontSize:
-                                        ResponsiveHelper.getAdaptiveFontSize(
-                                          context,
-                                          20,
-                                        ),
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFFFFFFFF),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                        _buildAmountRow(
+                          context,
+                          "Montant Total des Stocks",
+                          "images/dollar.png",
+                          '${formatNumber(totalAmount)} FCFA',
                         ),
-                        Row(
-                          children: [
-                            SizedBox(
-                              width:
-                                  ResponsiveHelper.getAdaptiveSpacing(context) *
-                                  2,
-                            ),
-                            Image.asset(
-                              "images/boxes.png",
-                              height:
-                                  ResponsiveHelper.getAdaptiveIconSize(
-                                    context,
-                                  ) *
-                                  2,
-                            ),
-                            Expanded(
-                              child: ListTile(
-                                title: Text(
-                                  'Quantité Totale des Stocks',
-                                  style: TextStyle(
-                                    fontSize:
-                                        ResponsiveHelper.getAdaptiveFontSize(
-                                          context,
-                                          16,
-                                        ),
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  '${formatNumber(totalQuantity)} unités',
-                                  style: TextStyle(
-                                    fontSize:
-                                        ResponsiveHelper.getAdaptiveFontSize(
-                                          context,
-                                          20,
-                                        ),
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFFFFFFFF),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                        SizedBox(
+                          height: ResponsiveHelper.getAdaptiveSpacing(context),
+                        ),
+                        _buildAmountRow(
+                          context,
+                          "Quantité Totale des Stocks",
+                          "images/boxes.png",
+                          '${formatNumber(totalQuantity)} unités',
                         ),
                       ],
                     ),
@@ -290,9 +212,21 @@ class _HomePageState extends State<HomePage> {
                   SizedBox(
                     height: ResponsiveHelper.getAdaptiveSpacing(context) * 2,
                   ),
+                  // Grille des options
                   Container(
                     margin: ResponsiveHelper.getAdaptivePadding(context),
-                    child: ResponsiveGrid(
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount:
+                          ResponsiveHelper.isMobile(context) ? 2 : 3,
+                      childAspectRatio: 1.2,
+                      crossAxisSpacing: ResponsiveHelper.getAdaptiveSpacing(
+                        context,
+                      ),
+                      mainAxisSpacing: ResponsiveHelper.getAdaptiveSpacing(
+                        context,
+                      ),
                       children: [
                         _buildMenuCard(
                           context,
@@ -360,6 +294,44 @@ class _HomePageState extends State<HomePage> {
           child: const Icon(Icons.add),
         ),
       ),
+    );
+  }
+
+  Widget _buildAmountRow(
+    BuildContext context,
+    String title,
+    String imagePath,
+    String value,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Image.asset(
+          imagePath,
+          height: ResponsiveHelper.getAdaptiveIconSize(context) * 2,
+        ),
+        SizedBox(width: ResponsiveHelper.getAdaptiveSpacing(context)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 18),
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

@@ -16,6 +16,9 @@ class StocksListPage extends StatefulWidget {
 class _StocksListPageState extends State<StocksListPage> {
   late Database _database;
   List<Stock> _stocks = [];
+  List<Stock> _filteredStocks = [];
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -32,6 +35,21 @@ class _StocksListPageState extends State<StocksListPage> {
 
     setState(() {
       _stocks = stockMaps.map((map) => Stock.fromMap(map)).toList();
+      _filteredStocks = _stocks;
+    });
+  }
+
+  void _filterStocks(String query) {
+    setState(() {
+      _filteredStocks =
+          _stocks.where((stock) {
+            final supplier = stock.supplier.toLowerCase();
+            final quantity = stock.quantityReceived.toString();
+            final amount = stock.amount.toString();
+            return supplier.contains(query.toLowerCase()) ||
+                quantity.contains(query) ||
+                amount.contains(query);
+          }).toList();
     });
   }
 
@@ -96,20 +114,57 @@ class _StocksListPageState extends State<StocksListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'LISTE DES STOCKS',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+        title:
+            _isSearching
+                ? TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher un stock...',
+                    hintStyle: TextStyle(
+                      fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                        context,
+                        16,
+                      ),
+                    ),
+                    border: InputBorder.none,
+                  ),
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+                    color: Colors.black,
+                  ),
+                  onChanged: _filterStocks,
+                )
+                : Text(
+                  'LISTE DES STOCKS',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+                  ),
+                ),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                  _filteredStocks = _stocks;
+                }
+              });
+            },
           ),
-        ),
+        ],
       ),
       body: ResponsiveWrapper(
         child:
-            _stocks.isEmpty
+            _filteredStocks.isEmpty
                 ? Center(
                   child: Text(
-                    'Aucun stock disponible',
+                    _isSearching && _stocks.isNotEmpty
+                        ? 'Aucun résultat trouvé'
+                        : 'Aucun stock disponible',
                     style: TextStyle(
                       fontSize: ResponsiveHelper.getAdaptiveFontSize(
                         context,
@@ -120,9 +175,9 @@ class _StocksListPageState extends State<StocksListPage> {
                   ),
                 )
                 : ListView.builder(
-                  itemCount: _stocks.length,
+                  itemCount: _filteredStocks.length,
                   itemBuilder: (context, index) {
-                    final stock = _stocks[index];
+                    final stock = _filteredStocks[index];
                     return Dismissible(
                       key: Key(stock.id.toString()),
                       direction: DismissDirection.endToStart,
@@ -209,5 +264,11 @@ class _StocksListPageState extends State<StocksListPage> {
                 ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 }

@@ -22,31 +22,30 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ResponsiveWrapper(
-        child: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage("images/background3.jpg"),
-              fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(Colors.black54, BlendMode.darken),
-            ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.black, Colors.deepPurple],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'images/cart.png',
-                  height: MediaQuery.of(context).size.height * 0.4,
-                ),
-                SizedBox(height: ResponsiveHelper.getAdaptiveSpacing(context)),
-                CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: ResponsiveHelper.getAdaptiveFontSize(context, 3),
-                ),
-              ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Spacer(flex: 2),
+            Image.asset(
+              'images/cart.png',
+              height: ResponsiveHelper.getAdaptiveImageHeight(
+                context,
+                factor: 0.3,
+              ),
             ),
-          ),
+            SizedBox(height: ResponsiveHelper.getAdaptiveSpacing(context)),
+            Spacer(flex: 3),
+          ],
         ),
       ),
     );

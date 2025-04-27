@@ -40,6 +40,8 @@ class Stock {
       'unit_price': unitPrice,
       'unit_price_type': unitPriceType,
       'amount': amount,
+      'paid_amount': paidAmount,
+      'remaining_amount': remainingAmount,
     };
   }
 
@@ -51,13 +53,13 @@ class Stock {
       date: map['date'],
       quantityReceived: map['quantity_received'],
       quantityReceivedType: map['quantity_received_type'],
-      sortedQuantity: map['sorted_quantity'],
-      exactQuantity: map['exact_quantity'],
+      sortedQuantity: map['sorted_quantity'] ?? 0.0,
+      exactQuantity: map['exact_quantity'] ?? 0.0,
       unitPrice: map['unit_price'],
       unitPriceType: map['unit_price_type'],
-      amount: map['amount'],
-      paidAmount: map['paid_amount'],
-      remainingAmount: map['remaining_amount'],
+      amount: map['amount'] ?? 0.0,
+      paidAmount: map['paid_amount'] ?? 0.0,
+      remainingAmount: map['remaining_amount'] ?? 0.0,
     );
   }
 }

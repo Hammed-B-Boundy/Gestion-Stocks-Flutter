@@ -10,35 +10,41 @@ class WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ResponsiveWrapper(
-        child: Container(
-          height: double.infinity,
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage("images/background2.jpg"),
-              fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.5),
-                BlendMode.darken,
-              ),
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("images/background2.jpg"),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              Colors.black.withOpacity(0.5),
+              BlendMode.darken,
             ),
           ),
-          child: SingleChildScrollView(
-            child: Container(
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth:
+                  ResponsiveHelper.isDesktop(context)
+                      ? MediaQuery.of(context).size.width * 0.6
+                      : ResponsiveHelper.isTablet(context)
+                      ? MediaQuery.of(context).size.width * 0.8
+                      : MediaQuery.of(context).size.width * 0.9,
+            ),
+            child: SingleChildScrollView(
               padding: ResponsiveHelper.getAdaptivePadding(context),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  SizedBox(
-                    height: ResponsiveHelper.isMobile(context) ? 150.0 : 200.0,
-                  ),
                   DelayedAnimation(
                     delay: 1000,
                     child: Image.asset(
                       'images/cart.png',
-                      height:
-                          ResponsiveHelper.isMobile(context) ? 150.0 : 200.0,
+                      height: ResponsiveHelper.getAdaptiveImageHeight(
+                        context,
+                        factor: 0.25,
+                      ),
                     ),
                   ),
                   SizedBox(
@@ -52,7 +58,7 @@ class WelcomePage extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: ResponsiveHelper.getAdaptiveFontSize(
                           context,
-                          ResponsiveHelper.isMobile(context) ? 24.0 : 30.0,
+                          28.0,
                         ),
                         color: Colors.white,
                       ),
@@ -63,16 +69,23 @@ class WelcomePage extends StatelessWidget {
                   ),
                   DelayedAnimation(
                     delay: 3000,
-                    child: Text(
-                      'Vous souhaitez mieux organiser vos stocks et garder des traces de vos entrées et sorties ? \nVous êtes au bon endroit !',
-                      style: TextStyle(
-                        fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveHelper.getAdaptiveSpacing(
                           context,
-                          ResponsiveHelper.isMobile(context) ? 16.0 : 20.0,
                         ),
-                        color: Colors.white,
                       ),
-                      textAlign: TextAlign.center,
+                      child: Text(
+                        'Vous souhaitez mieux organiser vos stocks et garder des traces de vos entrées et sorties ? \nVous êtes au bon endroit !',
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                            context,
+                            18.0,
+                          ),
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                   SizedBox(
@@ -85,9 +98,10 @@ class WelcomePage extends StatelessWidget {
                         backgroundColor: Colors.blueAccent,
                         padding: EdgeInsets.symmetric(
                           horizontal:
-                              ResponsiveHelper.isMobile(context) ? 40 : 50,
+                              ResponsiveHelper.getAdaptiveSpacing(context) * 5,
                           vertical:
-                              ResponsiveHelper.isMobile(context) ? 15 : 20,
+                              ResponsiveHelper.getAdaptiveSpacing(context) *
+                              1.5,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20.0),
@@ -104,7 +118,7 @@ class WelcomePage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: ResponsiveHelper.getAdaptiveFontSize(
                             context,
-                            ResponsiveHelper.isMobile(context) ? 18 : 20,
+                            20.0,
                           ),
                           fontWeight: FontWeight.bold,
                           color: Colors.white,

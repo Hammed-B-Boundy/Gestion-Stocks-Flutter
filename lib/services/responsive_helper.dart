@@ -82,4 +82,48 @@ class ResponsiveHelper {
       return const BoxConstraints(maxWidth: double.infinity);
     }
   }
+
+  static double getAdaptiveImageHeight(
+    BuildContext context, {
+    double factor = 0.4,
+  }) {
+    double screenHeight = getScreenHeight(context);
+    if (isMobile(context)) {
+      return screenHeight * factor * 0.8;
+    } else if (isTablet(context)) {
+      return screenHeight * factor;
+    } else {
+      return screenHeight * factor * 1.2;
+    }
+  }
+
+  static double getContentWidth(BuildContext context) {
+    if (isDesktop(context)) {
+      return getScreenWidth(context) * 0.7;
+    } else if (isTablet(context)) {
+      return getScreenWidth(context) * 0.85;
+    } else {
+      return getScreenWidth(context) * 0.95;
+    }
+  }
+
+  static double getContentMaxWidth(BuildContext context) {
+    if (isDesktop(context)) {
+      return 1200;
+    } else if (isTablet(context)) {
+      return 800;
+    } else {
+      return 500;
+    }
+  }
+
+  static double getCardHeight(BuildContext context) {
+    if (isDesktop(context)) {
+      return 180;
+    } else if (isTablet(context)) {
+      return 160;
+    } else {
+      return 140;
+    }
+  }
 }

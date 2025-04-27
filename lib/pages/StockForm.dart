@@ -104,8 +104,24 @@ class _StockFormState extends State<StockForm>
         text: formatNumber(number),
         selection: TextSelection.collapsed(offset: formatNumber(number).length),
       );
+
       setState(() {
         _paidAmount = number;
+        // Appeler la mise à jour avec contrôle
+        if (_paidAmount > _amount) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Le montant payé ne peut pas dépasser le montant total",
+                style: TextStyle(
+                  fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+                ),
+              ),
+            ),
+          );
+          _paidAmount = _amount;
+          _paidAmountController.text = formatNumber(_amount);
+        }
         _remainingAmount = _amount - _paidAmount;
       });
     }
@@ -146,14 +162,26 @@ class _StockFormState extends State<StockForm>
     final unitPriceValue = _unitPrice;
 
     setState(() {
-      _exactQuantity = (_quantityReceived - _sortedQuantity).toDouble();
-      _amount = _exactQuantity * unitPriceValue;
+      // Correction du calcul de la quantité exacte
+      _exactQuantity = (_quantityReceived - _sortedQuantity).abs();
+
+      // Calcul du montant total (toujours positif)
+      _amount = (_exactQuantity * unitPriceValue).abs();
+
       _updateRemainingAmount();
     });
   }
 
   void _updateRemainingAmount() {
-    _remainingAmount = _amount - _paidAmount;
+    setState(() {
+      // Garantir que le montant restant est toujours positif
+      _remainingAmount = (_amount - _paidAmount).abs();
+
+      // Si le montant payé dépasse le total, ajuster l'affichage
+      if (_paidAmount > _amount) {
+        _remainingAmount = 0;
+      }
+    });
   }
 
   String formatNumber(num value) {
@@ -188,6 +216,20 @@ class _StockFormState extends State<StockForm>
           SnackBar(
             content: Text(
               "La quantité triée ne peut pas dépasser la quantité reçue",
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (_paidAmount < 0 || _amount < 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Les montants ne peuvent pas être négatifs",
               style: TextStyle(
                 fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
               ),
@@ -375,11 +417,11 @@ class _StockFormState extends State<StockForm>
                         Expanded(
                           child: RadioListTile<bool>(
                             title: Text(
-                              'Nouveau fournisseur',
+                              'Nouveau',
                               style: TextStyle(
                                 fontSize: ResponsiveHelper.getAdaptiveFontSize(
                                   context,
-                                  16,
+                                  15,
                                 ),
                               ),
                             ),
@@ -395,7 +437,7 @@ class _StockFormState extends State<StockForm>
                         Expanded(
                           child: RadioListTile<bool>(
                             title: Text(
-                              'Fournisseur existant',
+                              'Existant',
                               style: TextStyle(
                                 fontSize: ResponsiveHelper.getAdaptiveFontSize(
                                   context,
@@ -522,7 +564,7 @@ class _StockFormState extends State<StockForm>
                         Expanded(
                           child: RadioListTile<String>(
                             title: Text(
-                              'Grosse',
+                              'Gros',
                               style: TextStyle(
                                 fontSize: ResponsiveHelper.getAdaptiveFontSize(
                                   context,
@@ -530,7 +572,7 @@ class _StockFormState extends State<StockForm>
                                 ),
                               ),
                             ),
-                            value: 'Grosse',
+                            value: 'Gros',
                             groupValue: _quantityCategory,
                             onChanged: (value) {
                               setState(() {
@@ -542,7 +584,7 @@ class _StockFormState extends State<StockForm>
                         Expanded(
                           child: RadioListTile<String>(
                             title: Text(
-                              'Détail',
+                              'Moyen',
                               style: TextStyle(
                                 fontSize: ResponsiveHelper.getAdaptiveFontSize(
                                   context,
@@ -550,7 +592,7 @@ class _StockFormState extends State<StockForm>
                                 ),
                               ),
                             ),
-                            value: 'Détail',
+                            value: 'Moyen',
                             groupValue: _quantityCategory,
                             onChanged: (value) {
                               setState(() {
@@ -665,7 +707,7 @@ class _StockFormState extends State<StockForm>
                         Expanded(
                           child: RadioListTile<String>(
                             title: Text(
-                              'Détail',
+                              'Moyen',
                               style: TextStyle(
                                 fontSize: ResponsiveHelper.getAdaptiveFontSize(
                                   context,
@@ -673,7 +715,7 @@ class _StockFormState extends State<StockForm>
                                 ),
                               ),
                             ),
-                            value: 'Détail',
+                            value: 'Moyen',
                             groupValue: _priceCategory,
                             onChanged: (value) {
                               setState(() {

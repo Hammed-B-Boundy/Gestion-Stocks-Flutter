@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'FournisseurDetailPage.dart'; // Import de la nouvelle page
+import 'FournisseurDetailPage.dart';
 import 'package:my_store/services/responsive_helper.dart';
 import 'package:my_store/widgets/responsive_wrapper.dart';
 
@@ -15,6 +15,9 @@ class FournisseursListPage extends StatefulWidget {
 class _FournisseursListPageState extends State<FournisseursListPage> {
   late Database _database;
   List<Map<String, dynamic>> _suppliers = [];
+  List<Map<String, dynamic>> _filteredSuppliers = [];
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -33,6 +36,17 @@ class _FournisseursListPageState extends State<FournisseursListPage> {
 
     setState(() {
       _suppliers = supplierMaps;
+      _filteredSuppliers = supplierMaps;
+    });
+  }
+
+  void _filterSuppliers(String query) {
+    setState(() {
+      _filteredSuppliers =
+          _suppliers.where((supplier) {
+            final name = supplier['name'].toString().toLowerCase();
+            return name.contains(query.toLowerCase());
+          }).toList();
     });
   }
 
@@ -42,15 +56,12 @@ class _FournisseursListPageState extends State<FournisseursListPage> {
 
   Future<void> _deleteSupplier(int id) async {
     await _database.transaction((txn) async {
-      // 1. D'abord supprimer les paiements associés
       await txn.delete('payments', where: 'supplier_id = ?', whereArgs: [id]);
       await txn.delete(
         'payment_history',
         where: 'supplier_id = ?',
         whereArgs: [id],
       );
-
-      // 2. Ensuite supprimer le fournisseur
       await txn.delete('suppliers', where: 'id = ?', whereArgs: [id]);
     });
     _loadSuppliers();
@@ -105,20 +116,57 @@ class _FournisseursListPageState extends State<FournisseursListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'FOURNISSEURS',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+        title:
+            _isSearching
+                ? TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher un fournisseur...',
+                    hintStyle: TextStyle(
+                      fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                        context,
+                        16,
+                      ),
+                    ),
+                    border: InputBorder.none,
+                  ),
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+                    color: Colors.black,
+                  ),
+                  onChanged: _filterSuppliers,
+                )
+                : Text(
+                  'FOURNISSEURS',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+                  ),
+                ),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                  _filteredSuppliers = _suppliers;
+                }
+              });
+            },
           ),
-        ),
+        ],
       ),
       body: ResponsiveWrapper(
         child:
-            _suppliers.isEmpty
+            _filteredSuppliers.isEmpty
                 ? Center(
                   child: Text(
-                    'Aucun fournisseur disponible',
+                    _isSearching && _suppliers.isNotEmpty
+                        ? 'Aucun résultat trouvé'
+                        : 'Aucun fournisseur disponible',
                     style: TextStyle(
                       fontSize: ResponsiveHelper.getAdaptiveFontSize(
                         context,
@@ -131,9 +179,9 @@ class _FournisseursListPageState extends State<FournisseursListPage> {
                 : RefreshIndicator(
                   onRefresh: _refreshData,
                   child: ListView.builder(
-                    itemCount: _suppliers.length,
+                    itemCount: _filteredSuppliers.length,
                     itemBuilder: (context, index) {
-                      final supplier = _suppliers[index];
+                      final supplier = _filteredSuppliers[index];
                       return Dismissible(
                         key: Key(supplier['id'].toString()),
                         direction: DismissDirection.endToStart,
@@ -235,5 +283,11 @@ class _FournisseursListPageState extends State<FournisseursListPage> {
                 ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 }
