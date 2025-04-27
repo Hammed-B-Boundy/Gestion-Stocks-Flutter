@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_store/services/database_helper.dart';
+import 'package:my_store/services/responsive_helper.dart';
+import 'package:my_store/widgets/responsive_wrapper.dart';
 
 class PaiementPage extends StatefulWidget {
   final Map<String, dynamic> fournisseur;
@@ -104,14 +106,16 @@ class _PaiementPageState extends State<PaiementPage> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
               "Paiement effectué avec succès !",
-              style: TextStyle(fontSize: 16),
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+              ),
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
 
@@ -125,7 +129,9 @@ class _PaiementPageState extends State<PaiementPage> {
               montantSaisi <= 0
                   ? "Le montant doit être supérieur à 0 !"
                   : "Le montant ne peut pas dépasser ${formatNumber(montantRestant)} FCFA !",
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+              ),
             ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
@@ -139,75 +145,103 @@ class _PaiementPageState extends State<PaiementPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "PAIEMENT",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+          ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Montant restant à payer : ${formatNumber(montantRestant)} FCFA",
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Form(
-              key: _formKey,
-              child: TextFormField(
-                controller: _montantController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: "Montant à payer",
-                  border: OutlineInputBorder(),
-                  suffixText: "FCFA",
+      body: ResponsiveWrapper(
+        child: Padding(
+          padding: ResponsiveHelper.getAdaptivePadding(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Montant restant à payer : ${formatNumber(montantRestant)} FCFA",
+                style: TextStyle(
+                  fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 18),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
                 ),
-                validator: (value) {
-                  final unformattedValue = value?.replaceAll('.', '') ?? '';
-                  if (unformattedValue.isEmpty) {
-                    return "Veuillez entrer un montant";
-                  }
-                  final montant = double.tryParse(unformattedValue);
-                  if (montant == null) {
-                    return "Veuillez entrer un montant valide";
-                  }
-                  if (montant <= 0) {
-                    return "Le montant doit être supérieur à 0";
-                  }
-                  if (montant > montantRestant) {
-                    return "Le montant ne peut dépasser ${formatNumber(montantRestant)} FCFA";
-                  }
-                  return null;
-                },
               ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _effectuerPaiement,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    // Ajoutez cette propriété
-                    borderRadius: BorderRadius.circular(10),
+              SizedBox(height: ResponsiveHelper.getAdaptiveSpacing(context)),
+              Form(
+                key: _formKey,
+                child: TextFormField(
+                  controller: _montantController,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: "Montant à payer",
+                    labelStyle: TextStyle(
+                      fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                        context,
+                        16,
+                      ),
+                    ),
+                    border: const OutlineInputBorder(),
+                    suffixText: "FCFA",
+                    suffixStyle: TextStyle(
+                      fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                        context,
+                        16,
+                      ),
+                    ),
+                  ),
+                  validator: (value) {
+                    final unformattedValue = value?.replaceAll('.', '') ?? '';
+                    if (unformattedValue.isEmpty) {
+                      return "Veuillez entrer un montant";
+                    }
+                    final montant = double.tryParse(unformattedValue);
+                    if (montant == null) {
+                      return "Veuillez entrer un montant valide";
+                    }
+                    if (montant <= 0) {
+                      return "Le montant doit être supérieur à 0";
+                    }
+                    if (montant > montantRestant) {
+                      return "Le montant ne peut dépasser ${formatNumber(montantRestant)} FCFA";
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              SizedBox(height: ResponsiveHelper.getAdaptiveSpacing(context)),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _effectuerPaiement,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      vertical:
+                          ResponsiveHelper.getAdaptiveSpacing(context) * 2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    "Valider le paiement",
+                    style: TextStyle(
+                      fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                        context,
+                        18,
+                      ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                child: const Text(
-                  "Valider le paiement",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

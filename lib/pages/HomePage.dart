@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:my_store/pages/FournisseursListPage.dart';
 import 'package:my_store/pages/PaymentHistoryPage.dart';
 import 'package:my_store/pages/StocksListPage.dart';
+import 'package:my_store/services/responsive_helper.dart';
+import 'package:my_store/widgets/responsive_wrapper.dart';
 import 'StockForm.dart'; // Importez le formulaire de gestion de stock
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -118,289 +120,166 @@ class _HomePageState extends State<HomePage> {
           leading: null, // Désactiver le bouton de retour
           automaticallyImplyLeading:
               false, // Supprime l'icône de retour par défaut
-          title: LayoutBuilder(
-            builder: (context, constraints) {
-              bool isMobile = constraints.maxWidth < 600;
-
-              return Row(
-                children: [
-                  Image.asset("images/man.png", height: isMobile ? 40 : 50),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Hey toi !',
-                        style: TextStyle(fontSize: isMobile ? 12 : 15),
-                      ),
-                      Text(
-                        'Bonjour',
-                        style: TextStyle(
-                          fontSize: isMobile ? 16 : 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-
-        body: RefreshIndicator(
-          onRefresh: getTotalAmountAndQuantity, // Pull-to-refresh
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              bool isMobile = constraints.maxWidth < 600;
-              bool isTablet =
-                  constraints.maxWidth >= 600 && constraints.maxWidth < 900;
-
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
+          title: ResponsiveWrapper(
+            child: Row(
+              children: [
+                Image.asset(
+                  "images/man.png",
+                  height: ResponsiveHelper.getAdaptiveIconSize(context) * 2,
+                ),
+                SizedBox(width: ResponsiveHelper.getAdaptiveSpacing(context)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      margin: EdgeInsets.all(isMobile ? 10.0 : 20.0),
-                      width: constraints.maxWidth * (isMobile ? 0.95 : 0.9),
-                      height: isMobile ? 180 : 200,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: <Color>[
-                            Color.fromARGB(255, 31, 113, 255),
-                            Color.fromARGB(255, 35, 189, 255),
-                            Color.fromARGB(255, 32, 233, 255),
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          tileMode: TileMode.mirror,
+                    Text(
+                      'Hey toi !',
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                          context,
+                          17,
                         ),
-                        borderRadius: BorderRadius.circular(10.0),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color.fromARGB(255, 109, 177, 255),
-                            blurRadius: 5.0,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Row(
-                            children: [
-                              SizedBox(height: isMobile ? 10 : 20),
-                              Image.asset("images/dollar.png", height: 50),
-                              Expanded(
-                                child: ListTile(
-                                  title: const Text(
-                                    'Montant Total des Stocks',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    '${formatNumber(totalAmount)} FCFA',
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFFFFFFFF),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              const SizedBox(width: 20),
-                              Image.asset("images/boxes.png", height: 50),
-                              Expanded(
-                                child: ListTile(
-                                  title: const Text(
-                                    'Quantité Totale des Stocks',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    '${formatNumber(totalQuantity)} unités',
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFFFFFFFF),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ),
                     ),
-                    SizedBox(height: 20),
-                    Container(
-                      //width: 400,
-                      margin: EdgeInsets.all(isMobile ? 10.0 : 20.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const StocksListPage(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              height: 100,
-                              width: 100,
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 235, 247, 255),
-                                borderRadius: BorderRadius.circular(20.0),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color.fromARGB(255, 144, 211, 255),
-                                    blurRadius: 3.0,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Image.asset("images/stock.png", height: 50),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    'Stocks',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.black,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap:
-                                () => {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) =>
-                                              const FournisseursListPage(),
-                                    ),
-                                  ),
-                                },
-                            child: Container(
-                              height: 100,
-                              width: 100,
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 235, 247, 255),
-                                borderRadius: BorderRadius.circular(20.0),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color.fromARGB(255, 144, 211, 255),
-                                    blurRadius: 3.0,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Image.asset(
-                                    "images/contact-book.png",
-                                    height: 50,
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    'Fournisseurs',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.black,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () async {
-                              // Ajoutez un indicateur de chargement si nécessaire
-                              showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder:
-                                    (context) => const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                              );
-
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => const PaymentHistoryPage(),
-                                ),
-                              );
-
-                              // Retirez l'indicateur de chargement quand la page est prête
-                              Navigator.of(context).pop();
-                            },
-                            child: Container(
-                              height: 100,
-                              width: 100,
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 235, 247, 255),
-                                borderRadius: BorderRadius.circular(20.0),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color.fromARGB(255, 144, 211, 255),
-                                    blurRadius: 3.0,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Image.asset(
-                                    "images/cash-payment.png",
-                                    height: 50,
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    'Paiement',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.black,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                    Text(
+                      'Bienvenue',
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                          context,
+                          20,
+                        ),
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-              );
-            },
+              ],
+            ),
+          ),
+        ),
+        body: RefreshIndicator(
+          onRefresh: getTotalAmountAndQuantity,
+          child: ResponsiveWrapper(
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // Carte du montant total
+                  Container(
+                    margin: ResponsiveHelper.getAdaptivePadding(context),
+                    width: ResponsiveHelper.getContentWidth(context),
+                    height: ResponsiveHelper.isMobile(context) ? 200 : 220,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: <Color>[
+                          Color.fromARGB(255, 31, 113, 255),
+                          Color.fromARGB(255, 35, 189, 255),
+                          Color.fromARGB(255, 32, 233, 255),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        tileMode: TileMode.mirror,
+                      ),
+                      borderRadius: BorderRadius.circular(10.0),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color.fromARGB(255, 109, 177, 255),
+                          blurRadius: 5.0,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildAmountRow(
+                          context,
+                          "Montant Total des Stocks",
+                          "images/dollar.png",
+                          '${formatNumber(totalAmount)} FCFA',
+                        ),
+                        SizedBox(
+                          height: ResponsiveHelper.getAdaptiveSpacing(context),
+                        ),
+                        _buildAmountRow(
+                          context,
+                          "Quantité Totale des Stocks",
+                          "images/boxes.png",
+                          '${formatNumber(totalQuantity)} unités',
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    height: ResponsiveHelper.getAdaptiveSpacing(context) * 2,
+                  ),
+                  // Grille des options
+                  Container(
+                    margin: ResponsiveHelper.getAdaptivePadding(context),
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount:
+                          ResponsiveHelper.isMobile(context) ? 2 : 3,
+                      childAspectRatio: 1.2,
+                      crossAxisSpacing: ResponsiveHelper.getAdaptiveSpacing(
+                        context,
+                      ),
+                      mainAxisSpacing: ResponsiveHelper.getAdaptiveSpacing(
+                        context,
+                      ),
+                      children: [
+                        _buildMenuCard(
+                          context,
+                          "Stocks",
+                          "images/stock.png",
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const StocksListPage(),
+                            ),
+                          ),
+                        ),
+                        _buildMenuCard(
+                          context,
+                          "Fournisseurs",
+                          "images/contact-book.png",
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => const FournisseursListPage(),
+                            ),
+                          ),
+                        ),
+                        _buildMenuCard(
+                          context,
+                          "Paiement",
+                          "images/cash-payment.png",
+                          () async {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder:
+                                  (context) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                            );
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const PaymentHistoryPage(),
+                              ),
+                            );
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
         floatingActionButton: FloatingActionButton(
@@ -413,6 +292,87 @@ class _HomePageState extends State<HomePage> {
           },
           backgroundColor: const Color.fromARGB(255, 35, 189, 255),
           child: const Icon(Icons.add),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAmountRow(
+    BuildContext context,
+    String title,
+    String imagePath,
+    String value,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Image.asset(
+          imagePath,
+          height: ResponsiveHelper.getAdaptiveIconSize(context) * 2,
+        ),
+        SizedBox(width: ResponsiveHelper.getAdaptiveSpacing(context)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 18),
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuCard(
+    BuildContext context,
+    String title,
+    String imagePath,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 100,
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 235, 247, 255),
+          borderRadius: BorderRadius.circular(20.0),
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromARGB(255, 144, 211, 255),
+              blurRadius: 3.0,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset(
+              imagePath,
+              height: ResponsiveHelper.getAdaptiveIconSize(context) * 2,
+            ),
+            SizedBox(height: ResponsiveHelper.getAdaptiveSpacing(context)),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 15),
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );

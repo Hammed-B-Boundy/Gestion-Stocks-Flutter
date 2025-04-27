@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'PaiementPage.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:my_store/services/responsive_helper.dart';
+import 'package:my_store/widgets/responsive_wrapper.dart';
 
 class FournisseurDetailPage extends StatefulWidget {
   final Map<String, dynamic> fournisseur;
@@ -19,7 +21,7 @@ class _FournisseurDetailPageState extends State<FournisseurDetailPage> {
   void initState() {
     super.initState();
     _fournisseur = Map<String, dynamic>.from(widget.fournisseur);
-    initializeDateFormatting('fr_FR', null); // important pour formatage
+    initializeDateFormatting('fr_FR', null);
   }
 
   String formatNumber(num value) {
@@ -42,84 +44,104 @@ class _FournisseurDetailPageState extends State<FournisseurDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "DETAILS DU FOURNISSEUR",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+          ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: ListTile(
-                  leading: const Icon(Icons.person, color: Colors.blue),
-                  title: Text(
-                    _fournisseur['name'],
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+      body: ResponsiveWrapper(
+        child: Padding(
+          padding: ResponsiveHelper.getAdaptivePadding(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: ResponsiveHelper.getAdaptivePadding(context),
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.person,
                       color: Colors.blue,
+                      size: ResponsiveHelper.getAdaptiveIconSize(context) * 1.2,
                     ),
-                  ),
-                  subtitle: Text(
-                    'Fournisseur depuis le ${formatDate(_fournisseur['date_ajout'])}',
-                    style: TextStyle(color: Colors.grey.shade700),
+                    title: Text(
+                      _fournisseur['name'],
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                          context,
+                          22,
+                        ),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Fournisseur depuis le ${formatDate(_fournisseur['date_ajout'])}',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                          context,
+                          14,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildDetailRow(
-                      Icons.attach_money,
-                      'Montant Total',
-                      '${formatNumber(_fournisseur['total_amount'])} FCFA',
-                      Colors.green,
-                    ),
-                    _buildDetailRow(
-                      Icons.check_circle,
-                      'Montant Payé',
-                      '${formatNumber(_fournisseur['paid_amount'])} FCFA',
-                      Colors.blue,
-                    ),
-                    _buildDetailRow(
-                      Icons.warning,
-                      'Montant Restant',
-                      '${formatNumber(_fournisseur['remaining_amount'])} FCFA',
-                      Colors.red,
-                    ),
-                  ],
+              SizedBox(height: ResponsiveHelper.getAdaptiveSpacing(context)),
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: ResponsiveHelper.getAdaptivePadding(context),
+                  child: Column(
+                    children: [
+                      _buildDetailRow(
+                        Icons.attach_money,
+                        'Montant Total',
+                        '${formatNumber(_fournisseur['total_amount'])} FCFA',
+                        Colors.green,
+                      ),
+                      _buildDetailRow(
+                        Icons.check_circle,
+                        'Montant Payé',
+                        '${formatNumber(_fournisseur['paid_amount'])} FCFA',
+                        Colors.blue,
+                      ),
+                      _buildDetailRow(
+                        Icons.warning,
+                        'Montant Restant',
+                        '${formatNumber(_fournisseur['remaining_amount'])} FCFA',
+                        Colors.red,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: ResponsiveHelper.getAdaptivePadding(context),
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: EdgeInsets.symmetric(
+                vertical: ResponsiveHelper.getAdaptiveSpacing(context) * 2,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -132,18 +154,19 @@ class _FournisseurDetailPageState extends State<FournisseurDetailPage> {
                 ),
               );
 
-              // Si retour avec mise à jour, on actualise l'affichage
               if (result != null && mounted) {
                 setState(() {
                   _fournisseur = Map<String, dynamic>.from(result);
                 });
               }
-              // Retourner un indicateur de mise à jour à la page précédente
               Navigator.pop(context, true);
             },
-            child: const Text(
+            child: Text(
               "Effectuer paiement",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 18),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -158,20 +181,29 @@ class _FournisseurDetailPageState extends State<FournisseurDetailPage> {
     Color color,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(
+        vertical: ResponsiveHelper.getAdaptiveSpacing(context),
+      ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.blueGrey),
-          const SizedBox(width: 12),
+          Icon(
+            icon,
+            color: Colors.blueGrey,
+            size: ResponsiveHelper.getAdaptiveIconSize(context),
+          ),
+          SizedBox(width: ResponsiveHelper.getAdaptiveSpacing(context)),
           Text(
             label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const Spacer(),
           Text(
             value,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
               fontWeight: FontWeight.bold,
               color: color,
             ),

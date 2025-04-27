@@ -5,6 +5,8 @@ import 'package:my_store/services/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:my_store/services/responsive_helper.dart';
+import 'package:my_store/widgets/responsive_wrapper.dart';
 
 class StockForm extends StatefulWidget {
   const StockForm({super.key});
@@ -36,9 +38,8 @@ class _StockFormState extends State<StockForm>
   String _quantityCategory = 'Grosse';
   String _priceCategory = 'Gros';
   String _currentDate = "";
-  bool _isNewSupplier = true; // Saisie ou sélection de fournisseur
+  bool _isNewSupplier = true;
   Database? _database;
-  // Variables pour l'étape 3 "Paiement"
   String? _paymentSupplier;
   final _paidAmountController = TextEditingController();
   double _paidAmount = 0.0;
@@ -56,7 +57,6 @@ class _StockFormState extends State<StockForm>
     _paidAmountController.addListener(_formatPaidAmount);
   }
 
-  // Ajoutez ces méthodes pour gérer le formatage
   void _formatQuantity() {
     final text = _quantityController.text.replaceAll('.', '');
     if (text.isNotEmpty) {
@@ -91,7 +91,7 @@ class _StockFormState extends State<StockForm>
         text: formatNumber(number),
         selection: TextSelection.collapsed(offset: formatNumber(number).length),
       );
-      _unitPrice = number; // Stocke la valeur numérique
+      _unitPrice = number;
       _calculateExactQuantity();
     }
   }
@@ -104,14 +104,29 @@ class _StockFormState extends State<StockForm>
         text: formatNumber(number),
         selection: TextSelection.collapsed(offset: formatNumber(number).length),
       );
+
       setState(() {
         _paidAmount = number;
+        // Appeler la mise à jour avec contrôle
+        if (_paidAmount > _amount) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Le montant payé ne peut pas dépasser le montant total",
+                style: TextStyle(
+                  fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+                ),
+              ),
+            ),
+          );
+          _paidAmount = _amount;
+          _paidAmountController.text = formatNumber(_amount);
+        }
         _remainingAmount = _amount - _paidAmount;
       });
     }
   }
 
-  // Méthode pour convertir le format affiché en valeur numérique
   double parseFormattedValue(String formattedValue) {
     return double.tryParse(formattedValue.replaceAll('.', '')) ?? 0.0;
   }
@@ -133,31 +148,40 @@ class _StockFormState extends State<StockForm>
     final List<Map<String, dynamic>> maps = await _database!.query('suppliers');
     setState(() {
       _suppliers = maps.map((e) => e['name'].toString()).toList();
-      // Si un fournisseur a été saisi à l'étape 1 et n'est pas dans la liste, on l'ajoute
       if (_isNewSupplier &&
           _supplierController.text.isNotEmpty &&
           !_suppliers.contains(_supplierController.text)) {
         _suppliers.add(_supplierController.text);
       }
-      // Par défaut, pour l'étape paiement, on sélectionne le fournisseur saisi ou sélectionné en étape 1
       _paymentSupplier =
           _isNewSupplier ? _supplierController.text : _selectedSupplier;
     });
   }
 
   void _calculateExactQuantity() {
-    // Utilise parseFormattedValue pour obtenir la valeur numérique du prix unitaire
-    final unitPriceValue = _unitPrice; // Déjà numérique grâce au validateur
+    final unitPriceValue = _unitPrice;
 
     setState(() {
-      _exactQuantity = (_quantityReceived - _sortedQuantity).toDouble();
-      _amount = _exactQuantity * unitPriceValue;
+      // Correction du calcul de la quantité exacte
+      _exactQuantity = (_quantityReceived - _sortedQuantity).abs();
+
+      // Calcul du montant total (toujours positif)
+      _amount = (_exactQuantity * unitPriceValue).abs();
+
       _updateRemainingAmount();
     });
   }
 
   void _updateRemainingAmount() {
-    _remainingAmount = _amount - _paidAmount;
+    setState(() {
+      // Garantir que le montant restant est toujours positif
+      _remainingAmount = (_amount - _paidAmount).abs();
+
+      // Si le montant payé dépasse le total, ajuster l'affichage
+      if (_paidAmount > _amount) {
+        _remainingAmount = 0;
+      }
+    });
   }
 
   String formatNumber(num value) {
@@ -180,7 +204,6 @@ class _StockFormState extends State<StockForm>
     super.dispose();
   }
 
-  // Dans la méthode _saveData, après l'ajout du stock, revenez à la page d'accueil
   void _saveData() async {
     if (_database == null) return;
 
@@ -188,31 +211,48 @@ class _StockFormState extends State<StockForm>
       String supplierName =
           _isNewSupplier ? _supplierController.text : _selectedSupplier!;
 
-      // Vérification supplémentaire des quantités
       if (_sortedQuantity > _quantityReceived) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
               "La quantité triée ne peut pas dépasser la quantité reçue",
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+              ),
             ),
           ),
         );
         return;
       }
 
-      // Vérification du montant payé
+      if (_paidAmount < 0 || _amount < 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Les montants ne peuvent pas être négatifs",
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+
       if (_paidAmount > _amount) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
               "Le montant payé ne peut pas dépasser le montant total",
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+              ),
             ),
           ),
         );
         return;
       }
 
-      // Vérifier si le fournisseur existe déjà
       List<Map<String, dynamic>> supplierData = await _database!.query(
         'suppliers',
         where: 'name = ?',
@@ -220,7 +260,6 @@ class _StockFormState extends State<StockForm>
       );
 
       if (supplierData.isEmpty) {
-        // Si le fournisseur n'existe pas, on l'ajoute
         await _database!.insert('suppliers', {
           'name': supplierName,
           'total_amount': _amount,
@@ -228,7 +267,6 @@ class _StockFormState extends State<StockForm>
           'remaining_amount': _remainingAmount,
         });
       } else {
-        // Si le fournisseur existe, on met à jour ses montants
         double existingTotal = supplierData.first['total_amount'] ?? 0.0;
         double existingPaid = supplierData.first['paid_amount'] ?? 0.0;
         double existingRemaining =
@@ -250,51 +288,80 @@ class _StockFormState extends State<StockForm>
         );
       }
 
-      // Enregistrer le stock
-      int stockId = await _database!.insert('stocks', {
-        'supplier': supplierName,
-        'date': _currentDate,
-        'quantity_received': _quantityReceived,
-        'quantity_received_type': _quantityCategory,
-        'sorted_quantity': _sortedQuantity,
-        'exact_quantity': _exactQuantity,
-        'unit_price': _unitPrice,
-        'unit_price_type': _priceCategory,
-        'amount': _amount,
-        'paid_amount': _paidAmount,
-        'remaining_amount': _remainingAmount,
-      });
-
-      // Réinitialiser les champs après l'ajout
-      _supplierController.clear();
-      _quantityReceived = 0;
-      _quantityCategory = 'Grosse';
-      _sortedQuantity = 0;
-      _exactQuantity = 0;
-      _unitPrice = 0;
-      _priceCategory = 'Gros';
-      _amount = 0;
-      _paidAmount = 0;
-      _remainingAmount = 0;
-      _isNewSupplier = false;
-      _selectedSupplier = null;
-
-      setState(() {});
-
-      // Récupérer et afficher les détails du stock
-      List<Map<String, dynamic>> stockData = await _database!.query(
-        'stocks',
-        where: 'id = ?',
-        whereArgs: [stockId],
+      // Ajouter le stock
+      final stock = Stock(
+        id: null,
+        supplier: supplierName,
+        date: _currentDate,
+        quantityReceived: _quantityReceived,
+        quantityReceivedType: _quantityCategory,
+        sortedQuantity: _sortedQuantity,
+        exactQuantity: _exactQuantity,
+        unitPrice: _unitPrice,
+        unitPriceType: _priceCategory,
+        amount: _amount,
+        paidAmount: _paidAmount,
+        remainingAmount: _remainingAmount,
       );
 
-      if (stockData.isNotEmpty) {
-        Stock newStock = Stock.fromMap(stockData.first);
+      final stockId = await _database!.insert('stocks', stock.toMap());
 
-        Navigator.push(
+      // Ajouter le paiement si un montant a été payé
+      if (_paidAmount > 0) {
+        await _database!.insert('payments', {
+          'supplier_id':
+              supplierData.isNotEmpty ? supplierData.first['id'] : null,
+          'supplier_name': supplierName,
+          'amount_paid': _paidAmount,
+          'payment_date': DateTime.now().toIso8601String(),
+        });
+
+        // Ajouter dans l'historique des paiements
+        await _database!.insert('payment_history', {
+          'supplier_id':
+              supplierData.isNotEmpty ? supplierData.first['id'] : null,
+          'supplier_name': supplierName,
+          'amount_paid': _paidAmount,
+          'payment_date': DateTime.now().toIso8601String(),
+          'deletion_date': null,
+        });
+      }
+
+      // Afficher un message de succès
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Stock ajouté avec succès !",
+            style: TextStyle(
+              fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+            ),
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Rediriger vers la page de détails du stock
+      if (mounted) {
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => StockDetailPage(stock: newStock),
+            builder:
+                (context) => StockDetailPage(
+                  stock: Stock(
+                    id: stockId,
+                    supplier: supplierName,
+                    date: _currentDate,
+                    quantityReceived: _quantityReceived,
+                    quantityReceivedType: _quantityCategory,
+                    sortedQuantity: _sortedQuantity,
+                    exactQuantity: _exactQuantity,
+                    unitPrice: _unitPrice,
+                    unitPriceType: _priceCategory,
+                    amount: _amount,
+                    paidAmount: _paidAmount,
+                    remainingAmount: _remainingAmount,
+                  ),
+                ),
           ),
         );
       }
@@ -305,500 +372,617 @@ class _StockFormState extends State<StockForm>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'AJOUTER UN STOCK',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+          ),
         ),
       ),
-      body: Stepper(
-        currentStep: _currentStep,
-        onStepContinue: () {
-          if (_currentStep == 0 && _formKey.currentState!.validate()) {
-            setState(() {
-              _currentStep = 1;
-            });
-          } else if (_currentStep == 1) {
-            if (_formKey.currentState!.validate()) {
-              setState(() {
-                _currentStep = 2;
-                // Pour l'étape Paiement, pré-remplir le fournisseur avec celui de l'étape 1
-                _paymentSupplier =
-                    _isNewSupplier
-                        ? _supplierController.text
-                        : _selectedSupplier;
-              });
-            }
-          } else if (_currentStep == 2) {
-            _saveData();
-          }
-        },
-        onStepCancel: () {
-          if (_currentStep > 0) {
-            setState(() {
-              _currentStep--;
-            });
-          }
-        },
-        controlsBuilder: (context, details) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Row(
-              children: [
-                if (_currentStep != 0)
-                  GestureDetector(
-                    onTap: details.onStepCancel,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 25,
-                        vertical: 15,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF0082B9),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Précédent',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: details.onStepContinue,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 25, vertical: 15),
-                    decoration: BoxDecoration(
-                      color: Color(0xFF0082B9),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      _currentStep == 2 ? 'Enregistrer' : 'Suivant',
-                      style: TextStyle(color: Colors.white),
-                    ),
+      body: ResponsiveWrapper(
+        child: Form(
+          key: _formKey,
+          child: Stepper(
+            currentStep: _currentStep,
+            onStepContinue: () {
+              if (_currentStep < 2) {
+                setState(() {
+                  _currentStep += 1;
+                });
+              } else {
+                _saveData();
+              }
+            },
+            onStepCancel: () {
+              if (_currentStep > 0) {
+                setState(() {
+                  _currentStep -= 1;
+                });
+              }
+            },
+            steps: [
+              Step(
+                title: Text(
+                  'Informations de base',
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 18),
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ],
-            ),
-          );
-        },
-        steps: [
-          // Étape 1 : Informations générales
-          Step(
-            title: const Text("Informations générales"),
-            content: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  // Section Fournisseur
-                  Card(
-                    elevation: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 10),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Fournisseur",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          // Boutons radio pour choisir entre nouveau et sélection
-                          Row(
-                            children: [
-                              Radio(
-                                value: true,
-                                groupValue: _isNewSupplier,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _isNewSupplier = value as bool;
-                                    _selectedSupplier = null;
-                                  });
-                                },
-                              ),
-                              const Text(
-                                "Nouveau",
-                                style: TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(width: 20),
-                              Radio(
-                                value: false,
-                                groupValue: _isNewSupplier,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _isNewSupplier = value as bool;
-                                    _supplierController.clear();
-                                  });
-                                },
-                              ),
-                              const Text(
-                                "Sélectionner",
-                                style: TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          if (_isNewSupplier)
-                            TextFormField(
-                              controller: _supplierController,
-                              decoration: const InputDecoration(
-                                labelText: "Nom du fournisseur",
-                                border: OutlineInputBorder(),
-                                hintText: "Saisissez le nom du fournisseur",
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return "Veuillez saisir un fournisseur";
-                                }
-                                if (value.trim().length < 2) {
-                                  return "Le nom doit contenir au moins 2 caractères";
-                                }
-                                if (RegExp(r'[0-9]').hasMatch(value)) {
-                                  return "Le nom ne doit pas contenir de chiffres";
-                                }
-                                return null;
-                              },
-                            )
-                          else
-                            DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: "Sélectionner un fournisseur",
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedSupplier,
-                              items:
-                                  _suppliers.map((String supplier) {
-                                    return DropdownMenuItem(
-                                      value: supplier,
-                                      child: Text(supplier),
-                                    );
-                                  }).toList(),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedSupplier = newValue;
-                                });
-                              },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return "Veuillez sélectionner un fournisseur";
-                                }
-                                return null;
-                              },
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Section Quantité reçue
-                  Card(
-                    elevation: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 10),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Quantité reçue",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextFormField(
-                            controller: _quantityController,
-                            decoration: const InputDecoration(
-                              labelText: "Quantité reçue",
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              final unformattedValue =
-                                  value?.replaceAll('.', '') ?? '';
-                              if (unformattedValue.trim().isEmpty) {
-                                return "Veuillez entrer une quantité";
-                              }
-                              final quantity = int.tryParse(unformattedValue);
-                              if (quantity == null) {
-                                return "Veuillez entrer un nombre valide";
-                              }
-                              if (quantity <= 0) {
-                                return "La quantité doit être supérieure à 0";
-                              }
-                              _quantityReceived = quantity;
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 10),
-                          // Boutons radio pour la catégorie de quantité
-                          Row(
-                            children: [
-                              Radio(
-                                value: "Grosse",
-                                groupValue: _quantityCategory,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _quantityCategory = value.toString();
-                                  });
-                                },
-                              ),
-                              const Text(
-                                "Grosse",
-                                style: TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(width: 20),
-                              Radio(
-                                value: "Moyenne",
-                                groupValue: _quantityCategory,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _quantityCategory = value.toString();
-                                  });
-                                },
-                              ),
-                              const Text(
-                                "Moyenne",
-                                style: TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Section Quantité produits triés
-                  Card(
-                    elevation: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 10),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Quantité produits triés",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextFormField(
-                            controller: _sortedQuantityController,
-                            decoration: const InputDecoration(
-                              labelText: "Quantité produits triés",
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return "Veuillez entrer une quantité";
-                              }
-                              final quantity = double.tryParse(
-                                value.replaceAll('.', ''),
-                              );
-                              if (quantity == null) {
-                                return "Veuillez entrer un nombre valide";
-                              }
-                              if (quantity < 0) {
-                                return "La quantité ne peut pas être négative";
-                              }
-                              if (quantity > _quantityReceived) {
-                                return "Ne peut pas dépasser la quantité reçue";
-                              }
-                              setState(() {
-                                _sortedQuantity = quantity;
-                                _calculateExactQuantity(); // Ajoutez cette ligne
-                              });
-                              return null;
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            isActive: _currentStep == 0,
-          ),
-          // Étape 2 : Tarification
-          Step(
-            title: const Text("Tarification"),
-            content: Column(
-              children: [
-                TextFormField(
-                  controller: _unitPriceController,
-                  decoration: const InputDecoration(
-                    labelText: "Prix unitaire",
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    final unformattedValue = value?.replaceAll('.', '') ?? '';
-                    if (unformattedValue.isEmpty) {
-                      return "Veuillez entrer un prix";
-                    }
-                    final price = int.tryParse(unformattedValue);
-                    if (price == null) {
-                      return "Veuillez entrer un nombre valide";
-                    }
-                    if (price <= 0) {
-                      return "Le prix doit être supérieur à 0";
-                    }
-                    setState(() {
-                      _unitPrice = price; // Stocke la valeur numérique
-                      _calculateExactQuantity(); // Force le recalcul
-                    });
-                    return null;
-                  },
-                  // onChanged: (value) {
-                  //   setState(() {
-                  //     _unitPrice = int.tryParse(value) ?? 0;
-                  //     _calculateExactQuantity();
-                  //   });
-                  // },
-                  onChanged: (value) {
-                    final unformattedValue = value.replaceAll('.', '');
-                    final number = int.tryParse(unformattedValue) ?? 0;
-                    setState(() {
-                      _unitPrice = number;
-                      _calculateExactQuantity();
-                    });
-                  },
-                ),
-                const SizedBox(height: 10),
-                Row(
+                content: Column(
                   children: [
-                    Radio(
-                      value: "Gros",
-                      groupValue: _priceCategory,
-                      onChanged: (value) {
-                        setState(() {
-                          _priceCategory = value.toString();
-                        });
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            title: Text(
+                              'Nouveau',
+                              style: TextStyle(
+                                fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                                  context,
+                                  15,
+                                ),
+                              ),
+                            ),
+                            value: true,
+                            groupValue: _isNewSupplier,
+                            onChanged: (value) {
+                              setState(() {
+                                _isNewSupplier = value!;
+                              });
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            title: Text(
+                              'Existant',
+                              style: TextStyle(
+                                fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                                  context,
+                                  16,
+                                ),
+                              ),
+                            ),
+                            value: false,
+                            groupValue: _isNewSupplier,
+                            onChanged: (value) {
+                              setState(() {
+                                _isNewSupplier = value!;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_isNewSupplier)
+                      TextFormField(
+                        controller: _supplierController,
+                        decoration: InputDecoration(
+                          labelText: 'Nom du fournisseur',
+                          labelStyle: TextStyle(
+                            fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                              context,
+                              16,
+                            ),
+                          ),
+                          border: const OutlineInputBorder(),
+                        ),
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                            context,
+                            16,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer le nom du fournisseur';
+                          }
+                          return null;
+                        },
+                      )
+                    else
+                      DropdownButtonFormField<String>(
+                        value: _selectedSupplier,
+                        decoration: InputDecoration(
+                          labelText: 'Sélectionner un fournisseur',
+                          labelStyle: TextStyle(
+                            fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                              context,
+                              16,
+                            ),
+                          ),
+                          border: const OutlineInputBorder(),
+                        ),
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                            context,
+                            16,
+                          ),
+                        ),
+                        items:
+                            _suppliers.map((String supplier) {
+                              return DropdownMenuItem<String>(
+                                value: supplier,
+                                child: Text(supplier),
+                              );
+                            }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedSupplier = newValue;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez sélectionner un fournisseur';
+                          }
+                          return null;
+                        },
+                      ),
+                    SizedBox(
+                      height: ResponsiveHelper.getAdaptiveSpacing(context),
+                    ),
+                    TextFormField(
+                      controller: _quantityController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Quantité reçue',
+                        labelStyle: TextStyle(
+                          fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                            context,
+                            16,
+                          ),
+                        ),
+                        border: const OutlineInputBorder(),
+                        suffixText: _quantityCategory,
+                        suffixStyle: TextStyle(
+                          fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                            context,
+                            16,
+                          ),
+                        ),
+                      ),
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                          context,
+                          16,
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer la quantité reçue';
+                        }
+                        return null;
                       },
                     ),
-                    const Text("Gros", style: TextStyle(fontSize: 14)),
-                    const SizedBox(width: 20),
-                    Radio(
-                      value: "Moyen",
-                      groupValue: _priceCategory,
-                      onChanged: (value) {
-                        setState(() {
-                          _priceCategory = value.toString();
-                        });
-                      },
+                    SizedBox(
+                      height: ResponsiveHelper.getAdaptiveSpacing(context),
                     ),
-                    const Text("Moyen", style: TextStyle(fontSize: 14)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: Text(
+                              'Gros',
+                              style: TextStyle(
+                                fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                                  context,
+                                  16,
+                                ),
+                              ),
+                            ),
+                            value: 'Gros',
+                            groupValue: _quantityCategory,
+                            onChanged: (value) {
+                              setState(() {
+                                _quantityCategory = value!;
+                              });
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: Text(
+                              'Moyen',
+                              style: TextStyle(
+                                fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                                  context,
+                                  16,
+                                ),
+                              ),
+                            ),
+                            value: 'Moyen',
+                            groupValue: _quantityCategory,
+                            onChanged: (value) {
+                              setState(() {
+                                _quantityCategory = value!;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: "Quantité exacte",
-                    border: OutlineInputBorder(),
-                  ),
-                  readOnly: true,
-                  controller: TextEditingController(
-                    text: formatNumber(_exactQuantity),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: "Montant",
-                    border: OutlineInputBorder(),
-                  ),
-                  readOnly: true,
-                  controller: TextEditingController(
-                    text: formatNumber(
-                      _amount.toInt(),
-                    ), // Convertir en int et formater
+                isActive: _currentStep >= 0,
+              ),
+              Step(
+                title: Text(
+                  'Détails du stock',
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 18),
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ],
-            ),
-            isActive: _currentStep == 1,
+                content: Column(
+                  children: [
+                    TextFormField(
+                      controller: _sortedQuantityController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Quantité triée',
+                        labelStyle: TextStyle(
+                          fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                            context,
+                            16,
+                          ),
+                        ),
+                        border: const OutlineInputBorder(),
+                      ),
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                          context,
+                          16,
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer la quantité triée';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(
+                      height: ResponsiveHelper.getAdaptiveSpacing(context),
+                    ),
+                    TextFormField(
+                      controller: _unitPriceController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Prix unitaire',
+                        labelStyle: TextStyle(
+                          fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                            context,
+                            16,
+                          ),
+                        ),
+                        border: const OutlineInputBorder(),
+                        suffixText: _priceCategory,
+                        suffixStyle: TextStyle(
+                          fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                            context,
+                            16,
+                          ),
+                        ),
+                      ),
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                          context,
+                          16,
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer le prix unitaire';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(
+                      height: ResponsiveHelper.getAdaptiveSpacing(context),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: Text(
+                              'Gros',
+                              style: TextStyle(
+                                fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                                  context,
+                                  16,
+                                ),
+                              ),
+                            ),
+                            value: 'Gros',
+                            groupValue: _priceCategory,
+                            onChanged: (value) {
+                              setState(() {
+                                _priceCategory = value!;
+                              });
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: Text(
+                              'Moyen',
+                              style: TextStyle(
+                                fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                                  context,
+                                  16,
+                                ),
+                              ),
+                            ),
+                            value: 'Moyen',
+                            groupValue: _priceCategory,
+                            onChanged: (value) {
+                              setState(() {
+                                _priceCategory = value!;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      height: ResponsiveHelper.getAdaptiveSpacing(context),
+                    ),
+                    Card(
+                      child: Padding(
+                        padding: ResponsiveHelper.getAdaptivePadding(context),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Résumé',
+                              style: TextStyle(
+                                fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                                  context,
+                                  18,
+                                ),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(
+                              height: ResponsiveHelper.getAdaptiveSpacing(
+                                context,
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Quantité exacte:',
+                                  style: TextStyle(
+                                    fontSize:
+                                        ResponsiveHelper.getAdaptiveFontSize(
+                                          context,
+                                          16,
+                                        ),
+                                  ),
+                                ),
+                                Text(
+                                  formatNumber(_exactQuantity),
+                                  style: TextStyle(
+                                    fontSize:
+                                        ResponsiveHelper.getAdaptiveFontSize(
+                                          context,
+                                          16,
+                                        ),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: ResponsiveHelper.getAdaptiveSpacing(
+                                context,
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Montant total:',
+                                  style: TextStyle(
+                                    fontSize:
+                                        ResponsiveHelper.getAdaptiveFontSize(
+                                          context,
+                                          16,
+                                        ),
+                                  ),
+                                ),
+                                Text(
+                                  '${formatNumber(_amount)} FCFA',
+                                  style: TextStyle(
+                                    fontSize:
+                                        ResponsiveHelper.getAdaptiveFontSize(
+                                          context,
+                                          16,
+                                        ),
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                isActive: _currentStep >= 1,
+              ),
+              Step(
+                title: Text(
+                  'Paiement',
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 18),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                content: Column(
+                  children: [
+                    TextFormField(
+                      controller: _paidAmountController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Montant payé',
+                        labelStyle: TextStyle(
+                          fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                            context,
+                            16,
+                          ),
+                        ),
+                        border: const OutlineInputBorder(),
+                        suffixText: 'FCFA',
+                        suffixStyle: TextStyle(
+                          fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                            context,
+                            16,
+                          ),
+                        ),
+                      ),
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                          context,
+                          16,
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer le montant payé';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(
+                      height: ResponsiveHelper.getAdaptiveSpacing(context),
+                    ),
+                    Card(
+                      child: Padding(
+                        padding: ResponsiveHelper.getAdaptivePadding(context),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Résumé du paiement',
+                              style: TextStyle(
+                                fontSize: ResponsiveHelper.getAdaptiveFontSize(
+                                  context,
+                                  18,
+                                ),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(
+                              height: ResponsiveHelper.getAdaptiveSpacing(
+                                context,
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Montant total:',
+                                  style: TextStyle(
+                                    fontSize:
+                                        ResponsiveHelper.getAdaptiveFontSize(
+                                          context,
+                                          16,
+                                        ),
+                                  ),
+                                ),
+                                Text(
+                                  '${formatNumber(_amount)} FCFA',
+                                  style: TextStyle(
+                                    fontSize:
+                                        ResponsiveHelper.getAdaptiveFontSize(
+                                          context,
+                                          16,
+                                        ),
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: ResponsiveHelper.getAdaptiveSpacing(
+                                context,
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Montant payé:',
+                                  style: TextStyle(
+                                    fontSize:
+                                        ResponsiveHelper.getAdaptiveFontSize(
+                                          context,
+                                          16,
+                                        ),
+                                  ),
+                                ),
+                                Text(
+                                  '${formatNumber(_paidAmount)} FCFA',
+                                  style: TextStyle(
+                                    fontSize:
+                                        ResponsiveHelper.getAdaptiveFontSize(
+                                          context,
+                                          16,
+                                        ),
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: ResponsiveHelper.getAdaptiveSpacing(
+                                context,
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Montant restant:',
+                                  style: TextStyle(
+                                    fontSize:
+                                        ResponsiveHelper.getAdaptiveFontSize(
+                                          context,
+                                          16,
+                                        ),
+                                  ),
+                                ),
+                                Text(
+                                  '${formatNumber(_remainingAmount)} FCFA',
+                                  style: TextStyle(
+                                    fontSize:
+                                        ResponsiveHelper.getAdaptiveFontSize(
+                                          context,
+                                          16,
+                                        ),
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                isActive: _currentStep >= 2,
+              ),
+            ],
           ),
-          // Étape 3 : Paiement
-          Step(
-            title: const Text("Paiement"),
-            content: Column(
-              children: [
-                // Champ de saisie du fournisseur (lecture seule)
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: "Fournisseur",
-                    border: OutlineInputBorder(),
-                  ),
-                  readOnly: true, // Champ non modifiable
-                  controller: TextEditingController(
-                    text:
-                        _isNewSupplier
-                            ? _supplierController.text
-                            : _selectedSupplier ?? "",
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Champ de saisie du montant payé
-                TextFormField(
-                  controller: _paidAmountController,
-                  decoration: const InputDecoration(
-                    labelText: "Montant payé",
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    final unformattedValue = value?.replaceAll('.', '') ?? '';
-                    if (unformattedValue.trim().isEmpty) {
-                      return "Veuillez entrer un montant";
-                    }
-                    final amount = double.tryParse(unformattedValue);
-                    if (amount == null) {
-                      return "Veuillez entrer un nombre valide";
-                    }
-                    if (amount < 0) {
-                      return "Le montant ne peut pas être négatif";
-                    }
-                    if (amount > _amount) {
-                      return "Ne peut pas dépasser le montant total";
-                    }
-                    return null;
-                  },
-                  onChanged: (value) {
-                    final unformattedValue = value.replaceAll('.', '');
-                    final number = double.tryParse(unformattedValue) ?? 0.0;
-                    setState(() {
-                      _paidAmount = number;
-                      _remainingAmount = _amount - _paidAmount;
-                    });
-                  },
-                ),
-                const SizedBox(height: 10),
-                // Affichage du montant restant (lecture seule)
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: "Montant restant",
-                    border: OutlineInputBorder(),
-                  ),
-                  readOnly: true,
-                  controller: TextEditingController(
-                    //text: _remainingAmount.toStringAsFixed(2),
-                    text: formatNumber(_remainingAmount),
-                  ),
-                ),
-              ],
-            ),
-            isActive: _currentStep == 2,
-          ),
-        ],
+        ),
       ),
     );
   }
