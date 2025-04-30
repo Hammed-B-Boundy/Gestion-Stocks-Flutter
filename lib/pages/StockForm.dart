@@ -416,14 +416,10 @@ class _StockFormState extends State<StockForm>
                       children: [
                         Expanded(
                           child: RadioListTile<bool>(
-                            title: Text(
-                              'Nouveau',
-                              style: TextStyle(
-                                fontSize: ResponsiveHelper.getAdaptiveFontSize(
-                                  context,
-                                  15,
-                                ),
-                              ),
+                            title: Image.asset(
+                              "images/add-user.png",
+                              width: 30,
+                              height: 30,
                             ),
                             value: true,
                             groupValue: _isNewSupplier,
@@ -436,14 +432,10 @@ class _StockFormState extends State<StockForm>
                         ),
                         Expanded(
                           child: RadioListTile<bool>(
-                            title: Text(
-                              'Existant',
-                              style: TextStyle(
-                                fontSize: ResponsiveHelper.getAdaptiveFontSize(
-                                  context,
-                                  16,
-                                ),
-                              ),
+                            title: Image.asset(
+                              "images/drop-down-arrow.png",
+                              width: 30,
+                              height: 30,
                             ),
                             value: false,
                             groupValue: _isNewSupplier,
