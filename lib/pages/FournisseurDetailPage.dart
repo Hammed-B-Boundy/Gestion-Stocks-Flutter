@@ -42,6 +42,8 @@ class _FournisseurDetailPageState extends State<FournisseurDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isPaidInFull = _fournisseur['remaining_amount'] == 0;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -58,6 +60,7 @@ class _FournisseurDetailPageState extends State<FournisseurDetailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (isPaidInFull) _buildSuccessBanner(context),
               Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
@@ -137,7 +140,7 @@ class _FournisseurDetailPageState extends State<FournisseurDetailPage> {
           width: double.infinity,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
+              backgroundColor: isPaidInFull ? Colors.grey : Colors.black,
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(
                 vertical: ResponsiveHelper.getAdaptiveSpacing(context) * 2,
@@ -146,23 +149,28 @@ class _FournisseurDetailPageState extends State<FournisseurDetailPage> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PaiementPage(fournisseur: _fournisseur),
-                ),
-              );
+            onPressed:
+                isPaidInFull
+                    ? null
+                    : () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  PaiementPage(fournisseur: _fournisseur),
+                        ),
+                      );
 
-              if (result != null && mounted) {
-                setState(() {
-                  _fournisseur = Map<String, dynamic>.from(result);
-                });
-              }
-              Navigator.pop(context, true);
-            },
+                      if (result != null && mounted) {
+                        setState(() {
+                          _fournisseur = Map<String, dynamic>.from(result);
+                        });
+                      }
+                      Navigator.pop(context, true);
+                    },
             child: Text(
-              "Effectuer paiement",
+              isPaidInFull ? "Paiement complet" : "Effectuer paiement",
               style: TextStyle(
                 fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 18),
                 fontWeight: FontWeight.bold,
@@ -170,6 +178,45 @@ class _FournisseurDetailPageState extends State<FournisseurDetailPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSuccessBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(
+        bottom: ResponsiveHelper.getAdaptiveSpacing(context) * 2,
+      ),
+      padding: ResponsiveHelper.getAdaptivePadding(context),
+      decoration: BoxDecoration(
+        color: Colors.green.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            color: Colors.green,
+            size: ResponsiveHelper.getAdaptiveIconSize(context) * 3,
+          ),
+          SizedBox(height: ResponsiveHelper.getAdaptiveSpacing(context)),
+          Text(
+            'Paiement complet !',
+            style: TextStyle(
+              fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
+          Text(
+            'Tous les montants ont été payés',
+            style: TextStyle(
+              fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 16),
+              color: Colors.green.shade800,
+            ),
+          ),
+        ],
       ),
     );
   }
