@@ -202,7 +202,7 @@ class _FournisseurDetailPageState extends State<FournisseurDetailPage> {
           ),
           SizedBox(height: ResponsiveHelper.getAdaptiveSpacing(context)),
           Text(
-            'Paiement complet!',
+            'Paiement complet !',
             style: TextStyle(
               fontSize: ResponsiveHelper.getAdaptiveFontSize(context, 20),
               fontWeight: FontWeight.bold,
